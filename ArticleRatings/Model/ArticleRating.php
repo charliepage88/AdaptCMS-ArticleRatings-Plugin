@@ -141,28 +141,14 @@ class ArticleRating extends ArticleRatingsAppModel
 	 */
 	public function recordRating($user_id, $article_id, $score)
 	{
-		$ip = $_SERVER['REMOTE_ADDR'];
-
-		$conditions['ArticleRating.article_id'] = $article_id;
-		if (!empty($user_id)) {
-			$conditions['OR'] = array(
-				'ArticleRating.user_id' => $user_id,
-				'ArticleRating.ip' => $ip
-			);
-		} else {
-			$conditions['ArticleRating.ip'] = $ip;
-		}
-
-		$find = $this->find('first', array(
-			'conditions' => $conditions
-		));
+		$find = $this->hasVoted($user_id, $article_id);
 
 		if (empty($find)) {
 			$this->create();
 
 			$data['ArticleRating']['article_id'] = $article_id;
 			$data['ArticleRating']['user_id'] = $user_id;
-			$data['ArticleRating']['ip'] = $ip;
+			$data['ArticleRating']['ip'] = $_SERVER['REMOTE_ADDR'];
 			$data['ArticleRating']['score'] = $score;
 
 			$this->save($data);
@@ -172,16 +158,52 @@ class ArticleRating extends ArticleRatingsAppModel
 			$this->save($find);
 		}
 
-		return $this->getCalculations($article_id);
+		return $this->getCalculations($article_id, $score);
+	}
+
+	/**
+	 * Has Voted
+	 *
+	 * @param $user_id
+	 * @param $article_id
+	 * @param bool $return_score
+	 * @return array
+	 */
+	public function hasVoted($user_id, $article_id, $return_score = false)
+	{
+		$ip = $_SERVER['REMOTE_ADDR'];
+
+		$conditions['conditions']['ArticleRating.article_id'] = $article_id;
+		if (!empty($user_id)) {
+			$conditions['conditions']['OR'] = array(
+				'ArticleRating.user_id' => $user_id,
+				'ArticleRating.ip' => $ip
+			);
+		} else {
+			$conditions['conditions']['ArticleRating.ip'] = $ip;
+		}
+
+		if (!empty($return_score)) {
+			$conditions['fields'] = 'ArticleRating.score';
+		}
+
+		$find = $this->find('first', $conditions);
+
+		if (!empty($return_score)) {
+			return (!empty($find['ArticleRating']['score']) ? (float) $find['ArticleRating']['score'] : 0);
+		} else {
+			return $find;
+		}
 	}
 
 	/**
 	 * Get Calculations
 	 *
 	 * @param $article_id
+	 * @param int|null $user_score
 	 * @return array
 	 */
-	public function getCalculations($article_id)
+	public function getCalculations($article_id, $user_score = 0)
 	{
 		$data = $this->find('all', array(
 			'conditions' => array(
@@ -208,6 +230,7 @@ class ArticleRating extends ArticleRatingsAppModel
 			'score' => $score,
 			'avg' => $avg,
 			'total' => $total,
+			'user' => (float) $user_score,
 			'status' => true
 		);
 	}

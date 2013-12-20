@@ -1,16 +1,18 @@
 <?php
 App::uses('CakeEventManager', 'Event');
-App::uses('ArticleRatingEventListener', 'ArticleRatings.EventListener');
+App::uses('ArticleRatingsEventListener', 'ArticleRatings.EventListener');
 
 $params = '[]';
 
 $config = json_decode($params, true);
 Configure::write('ArticleRatings', $config );
 
-CakeEventManager::instance()->attach(
-	new ArticleRatingEventListener(),
-	'Model.Article.afterFind'
-);
+if (CakePlugin::loaded('ArticleRatings')) {
+	CakeEventManager::instance()->attach(
+		new ArticleRatingsEventListener(),
+		'Model.Article.afterFind'
+	);
+}
 
 $vars = array(
 	array(
@@ -20,6 +22,10 @@ $vars = array(
 	array(
 		'tag' => '{{ article_rating_avg }}',
 		'value' => '<?php echo (!empty($article["ArticleRating"]["avg"]) ? $article["ArticleRating"]["avg"] : 0) ?>'
+	),
+	array(
+		'tag' => '{{ article_rating_user }}',
+		'value' => '<?php echo (!empty($article["ArticleRating"]["user"]) ? $article["ArticleRating"]["user"] : "N/A") ?>'
 	),
 	array(
 		'tag' => '{{ article_rating_total }}',

@@ -27,6 +27,10 @@ $(document).ready(function() {
                         el.find('.avg').html(data.avg);
                     }
 
+                    if (data.user && el.find('.user').length) {
+                        el.find('.user').html(data.user);
+                    }
+
                     successMessage('Your rating has been recorded');
                 } else {
                     errorMessage('Could not record your rating. Please try again');
